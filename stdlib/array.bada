@@ -1,0 +1,48 @@
+// Bada Standard Library - Array
+// import array;
+
+fn array_sum(int arr, int len) -> int {
+    let mut total: int = 0;
+    let mut i: int = 0;
+    while i < len {
+        total = total + arr[i];
+        i = i + 1;
+    }
+    total
+}
+
+fn array_max(int arr, int len) -> int {
+    let mut m: int = arr[0];
+    let mut i: int = 1;
+    while i < len {
+        if arr[i] > m {
+            m = arr[i];
+        }
+        i = i + 1;
+    }
+    m
+}
+
+fn array_min(int arr, int len) -> int {
+    let mut m: int = arr[0];
+    let mut i: int = 1;
+    while i < len {
+        if arr[i] < m {
+            m = arr[i];
+        }
+        i = i + 1;
+    }
+    m
+}
+
+fn array_print(int arr, int len) -> int {
+    printf!("[");
+    let mut i: int = 0;
+    while i < len {
+        printf!("%d", arr[i]);
+        if i < len - 1 { printf!(", "); }
+        i = i + 1;
+    }
+    printf!("]");
+    0
+}

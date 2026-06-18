@@ -1,0 +1,53 @@
+// Bada Standard Library - Math
+// import math;
+
+fn add(int a, int b) -> int {
+    a + b
+}
+
+fn subtract(int a, int b) -> int {
+    a - b
+}
+
+fn multiply(int a, int b) -> int {
+    a * b
+}
+
+fn divide(int a, int b) -> int {
+    a / b
+}
+
+fn square(int x) -> int {
+    x * x
+}
+
+fn cube(int x) -> int {
+    x * x * x
+}
+
+fn abs(int x) -> int {
+    if x < 0 {
+        return 0 - x;
+    }
+    x
+}
+
+fn max(int a, int b) -> int {
+    if a > b {
+        return a;
+    }
+    b
+}
+
+fn min(int a, int b) -> int {
+    if a < b {
+        return a;
+    }
+    b
+}
+
+fn clamp(int x, int lo, int hi) -> int {
+    if x < lo { return lo; }
+    if x > hi { return hi; }
+    x
+}
