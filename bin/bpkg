@@ -1,0 +1,132 @@
+#!/bin/bash
+set -e
+
+BPKG_VERSION="0.1.0"
+REGISTRY_URL="https://raw.githubusercontent.com/bada-lang-org/bpkg-registry/main/registry.json"
+BPKG_HOME="${HOME}/.bpkg"
+LIB_DIR="${PREFIX}/share/bada/lib"
+CACHE_FILE="${BPKG_HOME}/registry.json"
+
+mkdir -p "${BPKG_HOME}"
+mkdir -p "${LIB_DIR}"
+
+# ─── Helpers ─────────────────────────────────────────────
+
+print_usage() {
+    echo "bpkg ${BPKG_VERSION} - Bada package manager"
+    echo ""
+    echo "Usage:"
+    echo "  bpkg update              Sync registry index"
+    echo "  bpkg install <name>      Install a library"
+    echo "  bpkg remove <name>       Remove a library"
+    echo "  bpkg list                List installed libraries"
+    echo "  bpkg search <keyword>    Search registry"
+    echo "  bpkg --version           Show version"
+}
+
+require_jq() {
+    if ! command -v jq >/dev/null 2>&1; then
+        echo "error: 'jq' is required. Install with: pkg install jq"
+        exit 1
+    fi
+}
+
+# ─── Commands ────────────────────────────────────────────
+
+cmd_update() {
+    echo "[bpkg] fetching registry..."
+    curl -fsSL "${REGISTRY_URL}" -o "${CACHE_FILE}"
+    echo "[bpkg] registry updated."
+}
+
+cmd_install() {
+    require_jq
+    local name="$1"
+    if [ -z "$name" ]; then
+        echo "error: library name required"
+        echo "usage: bpkg install <name>"
+        exit 1
+    fi
+
+    if [ ! -f "${CACHE_FILE}" ]; then
+        echo "[bpkg] no local registry found, syncing first..."
+        cmd_update
+    fi
+
+    local url
+    url=$(jq -r ".libraries[\"${name}\"].url // empty" "${CACHE_FILE}")
+
+    if [ -z "$url" ]; then
+        echo "error: library '${name}' not found in registry"
+        exit 1
+    fi
+
+    echo "[bpkg] installing '${name}' from ${url}..."
+
+    local tmp_dir
+    tmp_dir="$(mktemp -d)"
+    git clone --depth 1 "${url}" "${tmp_dir}/${name}" >/dev/null 2>&1
+
+    mkdir -p "${LIB_DIR}/${name}"
+    cp -r "${tmp_dir}/${name}"/*.bada "${LIB_DIR}/${name}/" 2>/dev/null || true
+    rm -rf "${tmp_dir}"
+
+    echo "[bpkg] '${name}' installed to ${LIB_DIR}/${name}"
+}
+
+cmd_remove() {
+    local name="$1"
+    if [ -z "$name" ]; then
+        echo "error: library name required"
+        exit 1
+    fi
+    if [ -d "${LIB_DIR}/${name}" ]; then
+        rm -rf "${LIB_DIR}/${name}"
+        echo "[bpkg] removed '${name}'"
+    else
+        echo "error: '${name}' is not installed"
+        exit 1
+    fi
+}
+
+cmd_list() {
+    if [ -z "$(ls -A "${LIB_DIR}" 2>/dev/null)" ]; then
+        echo "No libraries installed."
+        return
+    fi
+    echo "Installed libraries:"
+    for dir in "${LIB_DIR}"/*/; do
+        [ -d "$dir" ] && echo "  - $(basename "$dir")"
+    done
+}
+
+cmd_search() {
+    require_jq
+    local keyword="$1"
+    if [ ! -f "${CACHE_FILE}" ]; then
+        cmd_update
+    fi
+    echo "Search results for '${keyword}':"
+    jq -r --arg kw "$keyword" '
+        .libraries | to_entries[] |
+        select(.key | test($kw; "i")) |
+        "  - \(.key): \(.value.description // "no description")"
+    ' "${CACHE_FILE}"
+}
+
+# ─── Main ────────────────────────────────────────────────
+
+case "$1" in
+    update)  cmd_update ;;
+    install) cmd_install "$2" ;;
+    remove)  cmd_remove "$2" ;;
+    list)    cmd_list ;;
+    search)  cmd_search "$2" ;;
+    --version|-v) echo "bpkg ${BPKG_VERSION}" ;;
+    --help|-h|"") print_usage ;;
+    *)
+        echo "error: unknown command '$1'"
+        print_usage
+        exit 1
+        ;;
+esac
