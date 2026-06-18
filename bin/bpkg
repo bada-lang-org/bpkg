@@ -7,9 +7,6 @@ BPKG_HOME="${HOME}/.bpkg"
 LIB_DIR="${PREFIX:-/usr/local}/share/bada/lib"
 CACHE_FILE="${BPKG_HOME}/registry.json"
 
-mkdir -p "${BPKG_HOME}"
-mkdir -p "${LIB_DIR}"
-
 # ─── Helpers ─────────────────────────────────────────────
 
 print_usage() {
@@ -34,6 +31,7 @@ require_jq() {
 # ─── Commands ────────────────────────────────────────────
 
 cmd_update() {
+    mkdir -p "${BPKG_HOME}"
     echo "[bpkg] fetching registry..."
     curl -fsSL "${REGISTRY_URL}" -o "${CACHE_FILE}"
     echo "[bpkg] registry updated."
@@ -41,6 +39,8 @@ cmd_update() {
 
 cmd_install() {
     require_jq
+    mkdir -p "${BPKG_HOME}"
+    mkdir -p "${LIB_DIR}"
     local name="$1"
     if [ -z "$name" ]; then
         echo "error: library name required"
@@ -90,6 +90,7 @@ cmd_remove() {
 }
 
 cmd_list() {
+    mkdir -p "${LIB_DIR}" 2>/dev/null || true
     if [ -z "$(ls -A "${LIB_DIR}" 2>/dev/null)" ]; then
         echo "No libraries installed."
         return
