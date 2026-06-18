@@ -4,7 +4,7 @@ set -e
 BPKG_VERSION="0.1.0"
 REGISTRY_URL="https://raw.githubusercontent.com/bada-lang-org/bpkg-registry/main/registry.json"
 BPKG_HOME="${HOME}/.bpkg"
-LIB_DIR="${PREFIX}/share/bada/lib"
+LIB_DIR="${PREFIX:-/usr/local}/share/bada/lib"
 CACHE_FILE="${BPKG_HOME}/registry.json"
 
 mkdir -p "${BPKG_HOME}"
