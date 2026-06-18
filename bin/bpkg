@@ -81,7 +81,7 @@ cmd_remove() {
         exit 1
     fi
     if [ -d "${LIB_DIR}/${name}" ]; then
-        rm -rf "${LIB_DIR}/${name}"
+        rm -rf "${LIB_DIR:?}/${name:?}"
         echo "[bpkg] removed '${name}'"
     else
         echo "error: '${name}' is not installed"

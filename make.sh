@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034
 # bpkg build script — format inspired by Termux build.sh
 
 BPKG_NAME="bpkg"
@@ -8,7 +9,7 @@ BPKG_LICENSE="Apache-2.0"
 BPKG_DEPENDS="bash curl git jq"
 
 bpkg_step_check_deps() {
-	pkg install ${BPKG_DEPENDS} -y
+	pkg install "${BPKG_DEPENDS}" -y
 }
 
 bpkg_step_install() {
