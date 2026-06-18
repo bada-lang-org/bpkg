@@ -8,6 +8,7 @@ BPKG_DEPENDS="bash curl git jq"
 echo "Building ${BPKG_NAME} v${BPKG_VERSION}"
 
 echo "[make] checking dependencies..."
+# shellcheck disable=SC2086
 pkg install ${BPKG_DEPENDS} -y
 
 echo "[make] installing ${BPKG_NAME}..."
