@@ -1,0 +1,82 @@
+name: Sync Registry
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'packages/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'packages/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Validate build.sh files
+        run: |
+          for dir in packages/*/; do
+            file="${dir}build.sh"
+            if [ -f "$file" ]; then
+              echo "Checking $file"
+              if ! grep -q "BPKG_PKG_NAME=" "$file"; then
+                echo "error: $file missing BPKG_PKG_NAME"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Generate registry entries
+        run: |
+          chmod +x scripts/sync-registry.sh
+          ./scripts/sync-registry.sh
+
+  sync:
+    needs: validate
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout bpkg
+        uses: actions/checkout@v4
+        with:
+          path: bpkg
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate registry entries
+        working-directory: bpkg
+        run: |
+          chmod +x scripts/sync-registry.sh
+          ./scripts/sync-registry.sh
+
+      - name: Checkout bpkg-registry
+        uses: actions/checkout@v4
+        with:
+          repository: bada-lang-org/bpkg-registry
+          token: ${{ secrets.REGISTRY_PUSH_TOKEN }}
+          path: bpkg-registry
+
+      - name: Copy generated entries
+        run: |
+          for f in bpkg/generated/*.json; do
+            name=$(basename "$f" .json)
+            mkdir -p "bpkg-registry/libraries/${name}"
+            cp "$f" "bpkg-registry/libraries/${name}/info.json"
+            echo "Synced: ${name}"
+          done
+
+      - name: Commit and push to bpkg-registry
+        working-directory: bpkg-registry
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add libraries/
+          git diff --quiet && git diff --staged --quiet || git commit -m "Sync from bpkg/packages"
+          git push
